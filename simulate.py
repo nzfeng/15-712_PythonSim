@@ -12,7 +12,8 @@ import benchmarks
 
 # Stores the malloc cache, possibly multiple. Each item in the queue is a list representing a single cache; 
 # each cache contains multiple 2-element lists, where the # of lists corresponds to the size of the cache (# of cache entries.)
-# Each 2-element list is of the form [lower, upper], which represents the size range. 
+# Each 2-element list is of the form [size_class_index, time], where <size_class_index> represents the size range. 
+# The 2nd element is a counter that is updated s.t. the least-recently used entry has the smallest <time> value.
 # Size class info, size, head, next don't need to be explicitly simulated, since we don't actually have to allocate memory.
 MALLOC_CACHE = Queue.Queue() 
 # https://stackoverflow.com/a/19790994
@@ -29,7 +30,7 @@ def st_speedup(nRuns):
 
     # Set up the malloc cache with the desired parameters.
     cache_size = 16 # default cache size is 16
-    cache = [[-1,-1] for entry in range(cache_size)] # queue will have a single Mallacc for a single thread
+    cache = [[-1, 0] for entry in range(cache_size)] # queue will have a single Mallacc for a single thread
     MALLOC_CACHE.put(cache) 
 
     # Baseline
@@ -37,36 +38,30 @@ def st_speedup(nRuns):
     thread1.start()
     thread1.join()
 
-    # resetQueue(MALLOC_CACHE)
-    # MALLOC_CACHE.put(cache) 
-    # thread1 = Thread(target=benchmarks.tp_small, args=("Thread-1", False, MALLOC_CACHE))
-    # thread1.start()
-    # thread1.join()
+    thread1 = Thread(target=benchmarks.tp_small, args=("Thread-1", False, MALLOC_CACHE))
+    thread1.start()
+    thread1.join()
 
-    # resetQueue(MALLOC_CACHE)
-    # MALLOC_CACHE.put(cache) 
-    # thread1 = Thread(target=benchmarks.gauss, args=("Thread-1", False, MALLOC_CACHE))
-    # thread1.start()
-    # thread1.join()
+    thread1 = Thread(target=benchmarks.gauss, args=("Thread-1", False, MALLOC_CACHE))
+    thread1.start()
+    thread1.join()
 
     # Mallacc-enabled
-    resetQueue(MALLOC_CACHE)
-    MALLOC_CACHE.put(cache) 
     thread1 = Thread(target=benchmarks.tp, args=("Thread-1", True, MALLOC_CACHE))
     thread1.start()
     thread1.join()
 
-    # resetQueue(MALLOC_CACHE)
-    # MALLOC_CACHE.put(cache) 
-    # thread1 = Thread(target=benchmarks.tp_small, args=("Thread-1", True, MALLOC_CACHE))
-    # thread1.start()
-    # thread1.join()
+    resetQueue(MALLOC_CACHE)
+    MALLOC_CACHE.put(cache) 
+    thread1 = Thread(target=benchmarks.tp_small, args=("Thread-1", True, MALLOC_CACHE))
+    thread1.start()
+    thread1.join()
 
-    # resetQueue(MALLOC_CACHE)
-    # MALLOC_CACHE.put(cache) 
-    # thread1 = Thread(target=benchmarks.gauss, args=("Thread-1", True, MALLOC_CACHE))
-    # thread1.start()
-    # thread1.join()
+    resetQueue(MALLOC_CACHE)
+    MALLOC_CACHE.put(cache) 
+    thread1 = Thread(target=benchmarks.gauss, args=("Thread-1", True, MALLOC_CACHE))
+    thread1.start()
+    thread1.join()
 
 
 def mt_speedup(nThreads, nRuns):
@@ -75,18 +70,66 @@ def mt_speedup(nThreads, nRuns):
 
     One MT benchmark where each thread has the same workload.
     One MT benchmark where each thread has diverse workloads.
-    One MT benchmark where the threads are split into 2 groups. 
-    Within each group, each thread has the same workload, but each group has different workloads.
+    One MT benchmark where the threads are split into 2 groups: Within each group, each thread has the same workload, 
+        but each group has different workloads.
     This is meant to simulate a workload where there are multiple threads, but there is redundancy between threads' access patterns. 
     '''
-    assert (num_threads % 2) == 0
     cache_size = 16
-    cache = [[-1,-1] for entry in range(cache_size)] 
+    cache = [[-1,0] for entry in range(cache_size)] 
     MALLOC_CACHE.put(cache) # simulate a single cache for all threads
 
-    pass
+    ## Same workload per thread
+    # Baseline
+    threads = []
+    for i in range(nThreads):
+        t = Thread(target=benchmarks.tp, args=("Thread-%d" %i, False, MALLOC_CACHE))
+        threads.append(t)
+        t.start()
+    for t in threads:
+        t.join()
+
+    # Mallacc-enabled
+    threads = []
+    for i in range(nThreads):
+        t = Thread(target=benchmarks.tp, args=("Thread-%d" %i, True, MALLOC_CACHE))
+        threads.append(t)
+        t.start()
+    for t in threads:
+        t.join()
+
+    ## Two groups
+    resetQueue(MALLOC_CACHE)
+    MALLOC_CACHE.put(cache) 
+    # Baseline
+    threads = []
+    for i in range(nThreads // 2):
+        t = Thread(target=benchmarks.tp, args=("Thread-%d" %i, False, MALLOC_CACHE))
+        threads.append(t)
+        t.start()
+    for i in range(nThreads // 2, nThreads):
+        t = Thread(target=benchmarks.gauss, args=("Thread-%d" %i, False, MALLOC_CACHE))
+        threads.append(t)
+        t.start()
+    for t in threads:
+        t.join()
+    # Mallacc-enabled
+    threads = []
+    for i in range(nThreads // 2):
+        t = Thread(target=benchmarks.tp, args=("Thread-%d" %i, True, MALLOC_CACHE))
+        threads.append(t)
+        t.start()
+    for i in range(nThreads // 2, nThreads):
+        t = Thread(target=benchmarks.gauss, args=("Thread-%d" %i, True, MALLOC_CACHE))
+        threads.append(t)
+        t.start()
+    for t in threads:
+        t.join()
+    
 
 def mt_cache_sweep(nThreads, nRuns):
+    '''
+    Determine the effect of increasing cache size on baseline Mallacc performance.
+    '''
     pass
 
 def main():

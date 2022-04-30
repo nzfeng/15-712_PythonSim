@@ -2,11 +2,11 @@
 
 import random
 import numpy as np
-import allocator
+from allocator import *
 
 # These parameters are copied from gperftools/num_iterations.h
-# ITERATIONS = 32768 
-ITERATIONS = 1
+ITERATIONS = 32768 
+# ITERATIONS = 1
 REPEATS = 13
 
 # Parameters for each benchmark:
@@ -31,17 +31,17 @@ def tp(threadName, isMallaccEnabled=False, mallocCache = None, nIterations=ITERA
 
 	sz = 32
 	for i in range(nIterations):
-		#totalMallocCycles += malloc(sz, isMallaccEnabled, mallocCache)
+		totalMallocCycles += malloc(sz, isMallaccEnabled, mallocCache)
 		nMallocCalls += 1
-		#totalFreeCycles += free(sz, isMallaccEnabled, mallocCache)
+		totalFreeCycles += free(sz, isMallaccEnabled, mallocCache)
 		nFreeCalls += 1
 		sz += 16
 		if (sz > 512): sz = 32
 
-	print "%s tp: %f %f" %(threadName, totalMallocCycles/nMallocCalls, totalFreeCycles/nFreeCalls)
+	print "%s\t tp\t mallacc=%s: %f %f" %(threadName, isMallaccEnabled, totalMallocCycles/nMallocCalls, totalFreeCycles/nFreeCalls)
 
 
-def tp_small(threadName, isMallaccEnabled=False, nIterations=ITERATIONS):
+def tp_small(threadName, isMallaccEnabled=False, mallocCache = None, nIterations=ITERATIONS):
 
 	totalMallocCycles = 0
 	totalFreeCycles = 0
@@ -57,10 +57,10 @@ def tp_small(threadName, isMallaccEnabled=False, nIterations=ITERATIONS):
 		sz += 32
 		if (sz > 128): sz = 8
 
-	print "%s tp_small: %f %f" %(threadName, totalMallocCycles/nMallocCalls, totalFreeCycles/nFreeCalls)
+	print "%s\t tp_small:\t mallacc=%s: %f %f" %(threadName, isMallaccEnabled, totalMallocCycles/nMallocCalls, totalFreeCycles/nFreeCalls)
 
 
-def gauss(threadName, isMallaccEnabled=False, nIterations=ITERATIONS):
+def gauss(threadName, isMallaccEnabled=False, mallocCache = None, nIterations=ITERATIONS):
 	
 	totalMallocCycles = 0
 	nMallocCalls = 0
@@ -75,7 +75,7 @@ def gauss(threadName, isMallaccEnabled=False, nIterations=ITERATIONS):
 		totalMallocCycles += malloc(sz, isMallaccEnabled, mallocCache)
 		nMallocCalls += 1
 
-	print "%s gauss: %f" %(threadName, totalMallocCycles/nMallocCalls)
+	print "%s\t gauss:\t mallacc=%s: %f" %(threadName, isMallaccEnabled, totalMallocCycles/nMallocCalls)
 
 
 def gauss_free(nIterations=ITERATIONS):

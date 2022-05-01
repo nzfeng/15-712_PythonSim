@@ -15,20 +15,20 @@ class CacheEntry(Enum):
 # Specifically, the paper mentions: "The hard-coded hardware adds an additional cycle of latency to the cache."
 CHECK_AGAINST_RANGE = 2
 # If cache hit, return the size class and allocation size corresponding to the requested size.
-MCSZ_LOOKUP = 2
+MCSZ_LOOKUP = 1
 # mcszupdate takes as input the original requested size & corresponding size class + allocation size, and either updates 
 # an existing cache entry, or inserts a new cache entry.
-CACHE_UPDATE = 2 # update existing entry 
-CACHE_EVICT = 2 # evict entry
+CACHE_UPDATE = 1 # update existing entry 
+CACHE_EVICT = 1 # evict entry
 # In the case of cache hit, need to pop Head, shift Next to Head, and prefetch the next Next.
 # This encompasses mchdpop + mcnxtprefetch.
 POP_HEAD_HIT = 3
 # Upon deallocation, needs to push freed pointer to head of list; update cached Head + Next pointer (if exists in the cache)
 MCHDPUSH = 3
 # In the case of a cache miss, still need to perform the size class mapping, which takes a certain # of cycles in TCMalloc.
-SZ_LOOKUP = 10
+SZ_LOOKUP = 20
 # In the case of a cache miss, still need to pop the head of the free list, which takes a certain # of cycles in TCMalloc.
-POP_HEAD_MISS = 10
+POP_HEAD_MISS = 20
 
 
 def isCacheNotFull(cache):
